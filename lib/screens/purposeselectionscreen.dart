@@ -3,58 +3,15 @@ import 'package:flutter/material.dart';
 class PurposeSelectionScreen extends StatelessWidget {
   const PurposeSelectionScreen({super.key});
 
-  // Preloaded checklists for each purpose
   final Map<String, List<String>> _purposeItems = const {
-    "Vacation Trip": [
-      "Casual wear",
-      "Swimwear",
-      "Sunglasses",
-      "Sunscreen",
-      "Camera"
-    ],
-    "Business Trip": [
-      "Formal wear",
-      "Laptop + charger",
-      "Power bank",
-      "Documents",
-      "Business cards"
-    ],
-    "Family Trip": [
-      "Kids’ clothes",
-      "Snacks & water",
-      "First aid kit",
-      "Toys/books",
-      "Extra shoes"
-    ],
+    "Vacation Trip": ["Casual wear", "Swimwear", "Sunglasses", "Sunscreen", "Camera"],
+    "Business Trip": ["Formal wear", "Laptop + charger", "Power bank", "Documents", "Business cards"],
+    "Family Trip": ["Kids’ clothes", "Snacks & water", "First aid kit", "Toys/books", "Extra shoes"],
     "Custom Trip": [],
-    "Adventure Trip": [
-      "Hiking shoes",
-      "Backpack",
-      "Sleeping bag",
-      "Torch",
-      "Energy bars"
-    ],
-    "Weekend Getaway": [
-      "2 sets of clothes",
-      "Toiletries",
-      "Snacks",
-      "Power bank",
-      "Travel pillow"
-    ],
-    "Event / Wedding Trip": [
-      "Traditional wear",
-      "Grooming kit",
-      "Gifts",
-      "Jewelry",
-      "Comfortable shoes"
-    ],
-    "International Trip": [
-      "Passport + Visa",
-      "Currency & forex card",
-      "Travel insurance",
-      "Universal charger",
-      "SIM card / roaming plan"
-    ],
+    "Adventure Trip": ["Hiking shoes", "Backpack", "Sleeping bag", "Torch", "Energy bars"],
+    "Weekend Getaway": ["2 sets of clothes", "Toiletries", "Snacks", "Power bank", "Travel pillow"],
+    "Event / Wedding Trip": ["Traditional wear", "Grooming kit", "Gifts", "Jewelry", "Comfortable shoes"],
+    "International Trip": ["Passport + Visa", "Currency & forex card", "Travel insurance", "Universal charger", "SIM card / roaming plan"],
   };
 
   @override
@@ -72,18 +29,25 @@ class PurposeSelectionScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Choose Your Purpose"),
+        title: const Text(
+          "Choose Your Purpose",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+        ),
         centerTitle: true,
         backgroundColor: const Color(0xFF4A00E0),
+        elevation: 2,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // 2 cards per row
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.85,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 250, // ✅ each card max width
+            mainAxisSpacing: 14,
+            crossAxisSpacing: 14,
+            childAspectRatio: 3 / 4, // ✅ controls height
           ),
           itemCount: purposes.length,
           itemBuilder: (context, index) {
@@ -103,8 +67,9 @@ class PurposeSelectionScreen extends StatelessWidget {
   Widget _buildPurposeCard(BuildContext context,
       {required IconData icon, required String title, required String tagline}) {
     return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      splashColor: Colors.white24,
       onTap: () {
-        // ✅ Navigate to HomeScreen with preloaded checklist
         Navigator.pushNamed(
           context,
           '/home',
@@ -121,7 +86,7 @@ class PurposeSelectionScreen extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.black26,
@@ -131,17 +96,17 @@ class PurposeSelectionScreen extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 42, color: Colors.white),
+              Icon(icon, size: 38, color: Colors.white),
               const SizedBox(height: 12),
               Text(
                 title,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -151,7 +116,7 @@ class PurposeSelectionScreen extends StatelessWidget {
                 tagline,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.white70,
                 ),
               ),
@@ -161,4 +126,4 @@ class PurposeSelectionScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

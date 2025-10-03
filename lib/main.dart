@@ -5,7 +5,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/purposeselectionscreen.dart'; // ✅ add purpose selection
-//import 'screens/packing_items_screen.dart'; // ✅ add packing items
+//import 'screens/smart_checklist_screen.dart'; // ✅ add packing items
 //import 'screens/home_screen.dart'; // ✅ add home screen
 
 void main() {
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/purposeSelection': (context) => const PurposeSelectionScreen(),
-        //'/packingItems': (context) => PackingItemsScreen(),
+        //'/smartchecklist': (context) =>  SmartChecklistScreen(),
         //'/home': (context) => const HomeScreen(),
       },
     );
