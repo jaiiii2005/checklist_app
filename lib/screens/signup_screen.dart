@@ -23,7 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)], // same as splash/login
+            colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -36,11 +36,11 @@ class _SignupScreenState extends State<SignupScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
+                boxShadow: const [
                   BoxShadow(
                     color: Colors.black26,
                     blurRadius: 8,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
@@ -51,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     // Logo
                     Image.asset(
-                      "lib/assets/logo.png", // ✅ use the same logo as login
+                      "lib/assets/logo.png",
                       width: 80,
                       height: 80,
                     ),
@@ -149,8 +149,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            // ✅ After signup -> go to home (placeholder)
-                            Navigator.pushReplacementNamed(context, '/home');
+                            // ✅ After signup → go to purpose selection
+                            Navigator.pushReplacementNamed(
+                                context, '/purposeSelection');
                           }
                         },
                         child: const Text(
@@ -174,12 +175,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ Google Sign-Up Button
+                    // Google Sign-Up Button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         icon: Image.asset(
-                          "lib/assets/google_logo.png", // ✅ same google logo
+                          "lib/assets/google_logo.png",
                           height: 20,
                         ),
                         label: const Text(
@@ -194,11 +195,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Google Sign Up pressed"),
-                            ),
-                          );
+                          // Navigate to purpose selection
+                          Navigator.pushReplacementNamed(
+                              context, '/purposeSelection');
                         },
                       ),
                     ),

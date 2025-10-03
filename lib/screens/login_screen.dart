@@ -90,13 +90,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) => value == null || value.isEmpty
-                          ? "Enter your password"
-                          : null,
+                      validator: (value) =>
+                      value == null || value.isEmpty ? "Enter your password" : null,
                     ),
                     const SizedBox(height: 24),
 
-                    // Login Button
+                    // ✅ Login Button → goes to Purpose Selection
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -109,7 +108,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            Navigator.pushReplacementNamed(context, '/home');
+                            Navigator.pushReplacementNamed(
+                                context, '/purposeSelection');
                           }
                         },
                         child: const Text(
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ Modern Google Sign-In Button
+                    // ✅ Google Sign-In → also goes to Purpose Selection
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -159,11 +159,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Google Login pressed"),
-                            ),
-                          );
+                          Navigator.pushReplacementNamed(
+                              context, '/purposeSelection');
                         },
                       ),
                     ),
