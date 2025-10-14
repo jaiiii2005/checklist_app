@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
-import 'screens/purposeselectionscreen.dart'; // ✅ add purpose selection
-//import 'screens/smart_checklist_screen.dart'; // ✅ add packing items
-//import 'screens/home_screen.dart'; // ✅ add home screen
+import 'screens/purposeselectionscreen.dart';
+import 'screens/smart_checklist_screen.dart'; // ✅ Added Smart Checklist
 
 void main() {
   runApp(const MyApp());
@@ -32,9 +31,24 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/purposeSelection': (context) => const PurposeSelectionScreen(),
-        //'/smartchecklist': (context) =>  SmartChecklistScreen(),
-        //'/home': (context) => const HomeScreen(),
+      },
+
+      // ✅ Handle navigation that needs arguments
+      onGenerateRoute: (settings) {
+        if (settings.name == '/smartChecklist') {
+          final args = settings.arguments as Map<String, dynamic>?;
+
+          return MaterialPageRoute(
+            builder: (context) => SmartChecklistScreen(
+              purpose: args?['purpose'] ?? 'Custom Trip',
+              items: args?['items'] ?? [],
+            ),
+          );
+        }
+
+        return null; // default
       },
     );
   }
 }
+
