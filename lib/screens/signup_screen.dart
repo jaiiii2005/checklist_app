@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -9,11 +11,60 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-  TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  // ✅ Handle Email Sign Up
+  Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      User? user = await _authService.signUpWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (user != null) {
+        await user.updateDisplayName(_nameController.text.trim());
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("🎉 Account created successfully!")),
+        );
+        Navigator.pushReplacementNamed(context, '/purposeSelection');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠ ${e.toString()}")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // ✅ Handle Google Sign Up
+  Future<void> _handleGoogleSignup() async {
+    setState(() => _isLoading = true);
+    try {
+      User? user = await _authService.signInWithGoogle();
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Welcome, ${user.displayName ?? 'User'}! 🎉")),
+        );
+        Navigator.pushReplacementNamed(context, '/purposeSelection');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠ ${e.toString()}")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,14 +100,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo
-                    Image.asset(
-                      "lib/assets/logo.png",
-                      width: 80,
-                      height: 80,
-                    ),
+                    Image.asset("lib/assets/logo.png", width: 80, height: 80),
                     const SizedBox(height: 16),
-
                     const Text(
                       "Create Account",
                       style: TextStyle(
@@ -67,7 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Name
+                    // Full Name
                     TextFormField(
                       controller: _nameController,
                       decoration: InputDecoration(
@@ -77,8 +122,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Enter your name" : null,
+                      validator: (v) =>
+                      v == null || v.isEmpty ? "Enter your name" : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -92,8 +137,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Enter your email" : null,
+                      validator: (v) =>
+                      v == null || v.isEmpty ? "Enter your email" : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -108,8 +153,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Enter your password" : null,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return "Enter your password";
+                        } else if (v.length < 6) {
+                          return "Password must be at least 6 characters";
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 
@@ -124,11 +175,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
                           return "Confirm your password";
                         }
-                        if (value != _passwordController.text) {
+                        if (v != _passwordController.text) {
                           return "Passwords don’t match";
                         }
                         return null;
@@ -147,24 +198,19 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // ✅ After signup → go to purpose selection
-                            Navigator.pushReplacementNamed(
-                                context, '/purposeSelection');
-                          }
-                        },
-                        child: const Text(
-                          "Sign Up",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
+                        onPressed: _isLoading ? null : _handleSignup,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Sign Up",
+                            style: TextStyle(
+                                fontSize: 16, color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // OR Divider
-                    Row(
-                      children: const [
+                    // Divider
+                    const Row(
+                      children: [
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -175,14 +221,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Google Sign-Up Button
+                    // Google Sign Up Button
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
-                        icon: Image.asset(
-                          "lib/assets/google_logo.png",
-                          height: 20,
-                        ),
+                        icon: Image.asset("lib/assets/google_logo.png", height: 20),
                         label: const Text(
                           "Sign Up with Google",
                           style: TextStyle(color: Colors.black87),
@@ -194,11 +237,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // Navigate to purpose selection
-                          Navigator.pushReplacementNamed(
-                              context, '/purposeSelection');
-                        },
+                        onPressed: _isLoading ? null : _handleGoogleSignup,
                       ),
                     ),
                     const SizedBox(height: 16),

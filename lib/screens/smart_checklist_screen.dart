@@ -7,7 +7,7 @@ class SmartChecklistScreen extends StatefulWidget {
   const SmartChecklistScreen({
     super.key,
     required this.purpose,
-    required this.items,
+    required this.items, required initialItems,
   });
 
   @override
@@ -15,37 +15,42 @@ class SmartChecklistScreen extends StatefulWidget {
 }
 
 class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
-  late List<Map<String, dynamic>> _checklist; // item + checked status
+  late List<Map<String, dynamic>> _checklist; // {name, checked}
   final TextEditingController _newItemController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _checklist = widget.items
-        .map((e) => {"name": e, "checked": false})
-        .toList(); // preloaded items
+        .map((item) => {"name": item, "checked": false})
+        .toList();
   }
 
   void _addNewItem(String item) {
-    if (item.isNotEmpty) {
-      setState(() {
-        _checklist.add({"name": item, "checked": false});
-      });
-      _newItemController.clear();
-    }
+    if (item.trim().isEmpty) return;
+    setState(() {
+      _checklist.add({"name": item.trim(), "checked": false});
+    });
+    _newItemController.clear();
   }
 
   void _finishChecklist() {
-    int total = _checklist.length;
-    int packed = _checklist.where((item) => item["checked"]).length;
-    double progress = (total == 0) ? 0 : (packed / total);
+    final selectedItems = _checklist
+        .where((item) => item["checked"] == true)
+        .map((e) => e["name"].toString())
+        .toList();
 
+    int total = _checklist.length;
+    int packed = selectedItems.length;
+    double progress = total == 0 ? 0.0 : packed / total;
+
+    // ✅ Navigate to Home with results
     Navigator.pushReplacementNamed(
       context,
       '/home',
       arguments: {
         "purpose": widget.purpose,
-        "checklist": _checklist,
+        "selectedItems": selectedItems,
         "progress": progress,
       },
     );
@@ -58,38 +63,54 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
         title: Text("${widget.purpose} Checklist"),
         centerTitle: true,
         backgroundColor: const Color(0xFF4A00E0),
+        elevation: 3,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Expanded(
-              child: ListView.builder(
+              child: _checklist.isEmpty
+                  ? const Center(
+                child: Text(
+                  "No items yet. Add something below!",
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+              )
+                  : ListView.builder(
                 itemCount: _checklist.length,
                 itemBuilder: (context, index) {
+                  final item = _checklist[index];
                   return CheckboxListTile(
                     activeColor: const Color(0xFF4A00E0),
+                    checkboxShape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
                     title: Text(
-                      _checklist[index]["name"],
+                      item["name"],
                       style: TextStyle(
                         fontSize: 16,
-                        decoration: _checklist[index]["checked"]
+                        decoration: item["checked"]
                             ? TextDecoration.lineThrough
                             : null,
                       ),
                     ),
-                    value: _checklist[index]["checked"],
+                    value: item["checked"],
                     onChanged: (val) {
                       setState(() {
-                        _checklist[index]["checked"] = val!;
+                        _checklist[index]["checked"] = val ?? false;
                       });
                     },
                   );
                 },
               ),
             ),
+            const SizedBox(height: 10),
 
-            // ➕ Add new item
+            // ➕ Add new item input
             Row(
               children: [
                 Expanded(
@@ -97,11 +118,15 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
                     controller: _newItemController,
                     decoration: InputDecoration(
                       hintText: "Add new item...",
+                      filled: true,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                      contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12),
                     ),
+                    onSubmitted: _addNewItem,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -117,12 +142,15 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
 
             // ✅ Done Button
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.check_circle_outline,
+                    color: Colors.white),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A00E0),
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -131,7 +159,7 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
                   ),
                 ),
                 onPressed: _finishChecklist,
-                child: const Text(
+                label: const Text(
                   "Done",
                   style: TextStyle(fontSize: 16, color: Colors.white),
                 ),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,9 +11,68 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
 
+  bool _isLoading = false;
+
+  /// ✅ Handle email/password login
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      User? user = await _authService.loginWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (user != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.green,
+            content: Text("Login successful! 🎉"),
+          ),
+        );
+        Navigator.pushReplacementNamed(context, '/purposeSelection');
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMsg = _handleFirebaseError(e.code);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.redAccent,
+          content: Text("⚠ $errorMsg"),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("⚠ Unexpected error: ${e.toString()}"),
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  /// ✅ Friendly Firebase error messages
+  String _handleFirebaseError(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return "No user found for that email.";
+      case 'wrong-password':
+        return "Incorrect password. Try again.";
+      case 'invalid-email':
+        return "The email address is badly formatted.";
+      case 'user-disabled':
+        return "This account has been disabled.";
+      default:
+        return "Login failed. Please try again.";
+    }
+  }
+
+  /// ✅ UI Layout
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
         height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)], // same as splash
+            colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -46,9 +107,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Logo
+                    // ✅ Logo
                     Image.asset(
-                      "lib/assets/logo.png", // 👈 Make sure logo.png exists
+                      "lib/assets/logo.png",
                       width: 80,
                       height: 80,
                     ),
@@ -64,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Email
+                    // ✅ Email Field
                     TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
@@ -74,12 +135,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Enter your email" : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Please enter your email";
+                        }
+                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 
-                    // Password
+                    // ✅ Password Field
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -90,12 +158,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) =>
-                      value == null || value.isEmpty ? "Enter your password" : null,
+                      validator: (value) => value == null || value.isEmpty
+                          ? "Enter your password"
+                          : null,
                     ),
                     const SizedBox(height: 24),
 
-                    // ✅ Login Button → goes to Purpose Selection
+                    // ✅ Login Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -106,23 +175,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            Navigator.pushReplacementNamed(
-                                context, '/purposeSelection');
-                          }
-                        },
-                        child: const Text(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
                           "Login",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 20),
 
-                    // OR Divider
-                    Row(
-                      children: const [
+                    // ✅ OR Divider
+                    const Row(
+                      children: [
                         Expanded(child: Divider()),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -133,12 +202,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ Google Sign-In → also goes to Purpose Selection
+                    // ✅ Google Sign-In (Future Integration)
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         icon: Image.asset(
-                          "lib/assets/google_logo.png", // 👈 Make sure google_logo.png exists
+                          "lib/assets/google_logo.png",
                           height: 24,
                         ),
                         label: const Text(
@@ -158,23 +227,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             side: const BorderSide(color: Colors.grey),
                           ),
                         ),
-                        onPressed: () {
-                          Navigator.pushReplacementNamed(
-                              context, '/purposeSelection');
+                        onPressed: () async {
+                          try {
+                            await _authService.signInWithGoogle();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Logged in with Google ✅"),
+                              ),
+                            );
+                            Navigator.pushReplacementNamed(
+                                context, '/purposeSelection');
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                Text("Google Sign-In failed: $e"),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Signup Link
+                    // ✅ Signup Redirect
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text("Don’t have an account?"),
                         TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/signup');
-                          },
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/signup'),
                           child: const Text(
                             "Sign Up",
                             style: TextStyle(color: Color(0xFF4A00E0)),
