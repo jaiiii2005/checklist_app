@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../ models/item.dart';
+import '../ models/trip.dart';
+import '../services/database_service.dart';
+
 
 class SmartChecklistScreen extends StatefulWidget {
   final String purpose;
@@ -7,7 +12,8 @@ class SmartChecklistScreen extends StatefulWidget {
   const SmartChecklistScreen({
     super.key,
     required this.purpose,
-    required this.items, required initialItems,
+    required this.items,
+    required initialItems,
   });
 
   @override
@@ -15,8 +21,9 @@ class SmartChecklistScreen extends StatefulWidget {
 }
 
 class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
-  late List<Map<String, dynamic>> _checklist; // {name, checked}
+  late List<Map<String, dynamic>> _checklist;
   final TextEditingController _newItemController = TextEditingController();
+  final DatabaseService _db = DatabaseService();
 
   @override
   void initState() {
@@ -34,25 +41,45 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
     _newItemController.clear();
   }
 
-  void _finishChecklist() {
-    final selectedItems = _checklist
-        .where((item) => item["checked"] == true)
-        .map((e) => e["name"].toString())
-        .toList();
+  Future<void> _finishChecklist() async {
+    // Convert to Trip model
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    int total = _checklist.length;
-    int packed = selectedItems.length;
-    double progress = total == 0 ? 0.0 : packed / total;
+    Trip trip = Trip(
+      title: widget.purpose,
+      description: "Auto-created smart checklist",
+    );
 
-    // ✅ Navigate to Home with results
+    // Save the trip to Firebase
+    await _db.addTrip(uid, trip);
+
+    // Save each checklist item inside this trip
+    for (var item in _checklist) {
+      Item newItem = Item(
+        name: item["name"],
+        done: item["checked"],
+      );
+      await _db.addItem(uid, trip.id!, newItem);
+    }
+
+    // Navigate to Home screen
     Navigator.pushReplacementNamed(
       context,
       '/home',
       arguments: {
         "purpose": widget.purpose,
-        "selectedItems": selectedItems,
-        "progress": progress,
+        "selectedItems": _checklist
+            .where((e) => e["checked"] == true)
+            .map((e) => e["name"])
+            .toList(),
+        "progress":
+        _checklist.where((e) => e["checked"] == true).length /
+            _checklist.length,
       },
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Trip saved successfully! 🎉")),
     );
   }
 
@@ -108,9 +135,7 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
                 },
               ),
             ),
-            const SizedBox(height: 10),
 
-            // ➕ Add new item input
             Row(
               children: [
                 Expanded(
@@ -145,12 +170,11 @@ class _SmartChecklistScreenState extends State<SmartChecklistScreen> {
 
             const SizedBox(height: 20),
 
-            // ✅ Done Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.check_circle_outline,
-                    color: Colors.white),
+                icon:
+                const Icon(Icons.check_circle_outline, color: Colors.white),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4A00E0),
                   padding: const EdgeInsets.symmetric(vertical: 14),

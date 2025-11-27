@@ -1,79 +1,70 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../ models/item.dart';
 import '../ models/trip.dart';
-import '../ models/user.dart';
+
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// 🧍 Save user info when they sign up
-  Future<void> saveUser(AppUser user) async {
-    await _db.collection('users').doc(user.uid).set(user.toMap());
+  Future<void> createUser(String uid, Map<String, dynamic> data) async {
+    await _db.collection("users").doc(uid).set(data, SetOptions(merge: true));
   }
 
-  /// 💼 Create a new trip document for the user
-  Future<void> createTrip(String uid, Trip trip) async {
-    await _db
-        .collection('users')
+  /// ADD TRIP
+  Future<void> addTrip(String uid, Trip trip) async {
+    final doc = _db
+        .collection("users")
         .doc(uid)
-        .collection('trips')
-        .doc(trip.id)
-        .set(trip.toMap());
+        .collection("trips")
+        .doc(); // create unique trip id
+
+    trip.id = doc.id;
+
+    await doc.set(trip.toMap());
   }
 
-  /// 📦 Fetch all trips for a user
-  Future<List<Trip>> getTrips(String uid) async {
-    final snapshot =
-    await _db.collection('users').doc(uid).collection('trips').get();
-
-    return snapshot.docs
-        .map((doc) => Trip.fromMap(doc.data()))
-        .toList();
-  }
-
-  /// 🔄 Update progress or checklist items
-  Future<void> updateTrip(String uid, Trip trip) async {
-    await _db
-        .collection('users')
+  /// GET TRIPS STREAM
+  Stream<List<Trip>> getTrips(String uid) {
+    return _db
+        .collection("users")
         .doc(uid)
-        .collection('trips')
-        .doc(trip.id)
-        .update(trip.toMap());
+        .collection("trips")
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Trip.fromMap(doc.data()))
+          .toList();
+    });
   }
 
-  /// 🗑️ Delete a trip
-  Future<void> deleteTrip(String uid, String tripId) async {
-    await _db
-        .collection('users')
+  /// ADD ITEM TO TRIP
+  Future<void> addItem(String uid, String tripId, Item item) async {
+    final doc = _db
+        .collection("users")
         .doc(uid)
-        .collection('trips')
+        .collection("trips")
         .doc(tripId)
-        .delete();
+        .collection("items")
+        .doc();
+
+    item.id = doc.id;
+
+    await doc.set(item.toMap());
   }
 
-  /// 🧾 Save a new checklist item
-  Future<void> addChecklistItem(String uid, String tripId, Item item) async {
-    await _db
-        .collection('users')
+  /// GET ITEMS STREAM
+  Stream<List<Item>> getItems(String uid, String tripId) {
+    return _db
+        .collection("users")
         .doc(uid)
-        .collection('trips')
+        .collection("trips")
         .doc(tripId)
-        .collection('items')
-        .add(item.toMap());
-  }
-
-  /// 📥 Fetch all checklist items for a trip
-  Future<List<Item>> getChecklistItems(String uid, String tripId) async {
-    final snapshot = await _db
-        .collection('users')
-        .doc(uid)
-        .collection('trips')
-        .doc(tripId)
-        .collection('items')
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Item.fromMap(doc.data()))
-        .toList();
+        .collection("items")
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Item.fromMap(doc.data()))
+          .toList();
+    });
   }
 }

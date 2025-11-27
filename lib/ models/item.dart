@@ -1,21 +1,25 @@
 class Item {
+  String? id;
   String name;
-  bool isChecked;
+  bool done;
 
   Item({
+    this.id,
     required this.name,
-    this.isChecked = false,
+    this.done = false,
   });
 
   Map<String, dynamic> toMap() => {
-    'name': name,
-    'isChecked': isChecked,
+    "id": id,
+    "name": name,
+    "done": done,
   };
 
   factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
-      name: map['name'] ?? '',
-      isChecked: map['isChecked'] ?? false,
+      id: map["id"],
+      name: map["name"],
+      done: map["done"] ?? false,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/database_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +14,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   final AuthService _authService = AuthService();
+  final DatabaseService _db = DatabaseService();
 
   bool _isLoading = false;
 
@@ -22,19 +25,27 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+
     try {
-      User? user = await _authService.loginWithEmail(
+      User? user = await _authService.signIn(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
       if (user != null) {
+        // 🔥 ENSURE USER DOCUMENT EXISTS
+        await _db.createUser(user.uid, {
+          "email": user.email,
+          "lastLogin": DateTime.now(),
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.green,
             content: Text("Login successful! 🎉"),
           ),
         );
+
         Navigator.pushReplacementNamed(context, '/purposeSelection');
       }
     } on FirebaseAuthException catch (e) {
@@ -45,18 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Text("⚠ $errorMsg"),
         ),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("⚠ Unexpected error: ${e.toString()}"),
-        ),
-      );
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  /// ✅ Friendly Firebase error messages
+  /// Firebase error messages
   String _handleFirebaseError(String code) {
     switch (code) {
       case 'user-not-found':
@@ -72,7 +77,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// ✅ UI Layout
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -107,7 +111,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // ✅ Logo
                     Image.asset(
                       "lib/assets/logo.png",
                       width: 80,
@@ -125,7 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // ✅ Email Field
                     TextFormField(
                       controller: _emailController,
                       decoration: InputDecoration(
@@ -147,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ✅ Password Field
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -158,13 +159,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) => value == null || value.isEmpty
+                      validator: (value) =>
+                      value == null || value.isEmpty
                           ? "Enter your password"
                           : null,
                     ),
                     const SizedBox(height: 24),
 
-                    // ✅ Login Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -187,9 +188,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 20),
 
-                    // ✅ OR Divider
                     const Row(
                       children: [
                         Expanded(child: Divider()),
@@ -200,9 +201,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Expanded(child: Divider()),
                       ],
                     ),
+
                     const SizedBox(height: 20),
 
-                    // ✅ Google Sign-In (Future Integration)
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
@@ -229,19 +230,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         onPressed: () async {
                           try {
-                            await _authService.signInWithGoogle();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Logged in with Google ✅"),
-                              ),
-                            );
-                            Navigator.pushReplacementNamed(
-                                context, '/purposeSelection');
+                            User? user = await _authService.signInWithGoogle();
+
+                            if (user != null) {
+                              await _db.createUser(user.uid, {
+                                "name": user.displayName,
+                                "email": user.email,
+                                "lastLogin": DateTime.now(),
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                  Text("Logged in with Google ✅"),
+                                ),
+                              );
+                              Navigator.pushReplacementNamed(
+                                  context, '/purposeSelection');
+                            }
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content:
-                                Text("Google Sign-In failed: $e"),
+                                content: Text("Google Sign-In failed: $e"),
                               ),
                             );
                           }
@@ -250,7 +260,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // ✅ Signup Redirect
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [

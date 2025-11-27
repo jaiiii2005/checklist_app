@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../services/database_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -17,6 +18,8 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
 
   final AuthService _authService = AuthService();
+  final DatabaseService _db = DatabaseService();
+
   bool _isLoading = false;
 
   // ✅ Handle Email Sign Up
@@ -25,16 +28,26 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      User? user = await _authService.signUpWithEmail(
+      User? user = await _authService.signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
       if (user != null) {
         await user.updateDisplayName(_nameController.text.trim());
+
+        // 🔥 SAVE USER IN FIRESTORE
+        final uid = user.uid;
+        await _db.createUser(uid, {
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "createdAt": DateTime.now(),
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("🎉 Account created successfully!")),
         );
+
         Navigator.pushReplacementNamed(context, '/purposeSelection');
       }
     } catch (e) {
@@ -49,12 +62,21 @@ class _SignupScreenState extends State<SignupScreen> {
   // ✅ Handle Google Sign Up
   Future<void> _handleGoogleSignup() async {
     setState(() => _isLoading = true);
+
     try {
       User? user = await _authService.signInWithGoogle();
+
       if (user != null) {
+        await _db.createUser(user.uid, {
+          "name": user.displayName,
+          "email": user.email,
+          "createdAt": DateTime.now(),
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Welcome, ${user.displayName ?? 'User'}! 🎉")),
         );
+
         Navigator.pushReplacementNamed(context, '/purposeSelection');
       }
     } catch (e) {
@@ -208,7 +230,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Divider
                     const Row(
                       children: [
                         Expanded(child: Divider()),
@@ -242,7 +263,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Login Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
