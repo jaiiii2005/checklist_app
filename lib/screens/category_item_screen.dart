@@ -1,11 +1,14 @@
+// lib/screens/category_item_screen.dart
 import 'package:flutter/material.dart';
 
 class CategoryItemScreen extends StatefulWidget {
   final String purpose;
+  final List<String> initialSelectedItems;
 
   const CategoryItemScreen({
     super.key,
-    required this.purpose, required List initialSelectedItems,
+    required this.purpose,
+    required this.initialSelectedItems,
   });
 
   @override
@@ -13,7 +16,6 @@ class CategoryItemScreen extends StatefulWidget {
 }
 
 class _CategoryItemScreenState extends State<CategoryItemScreen> {
-  // ✅ All categories and their items (stored locally)
   final Map<String, dynamic> _items = {
     "Essentials": [
       "Passport",
@@ -21,229 +23,124 @@ class _CategoryItemScreenState extends State<CategoryItemScreen> {
       {"Tickets": ["Air", "Bus", "Train"]},
       "Boarding pass",
       "Foreign currency",
-      "Credit card",
-      "Debit card",
-      "Emergency money",
-      "Travel insurance",
-      "Money belt"
+      "Credit card"
     ],
     "Clothing": [
       "Shirts",
       "T-shirts",
-      "Polos",
       "Jeans",
-      "Trousers",
-      "Shorts",
-      "Dresses",
-      "Skirts",
       "Jackets",
-      "Coats",
-      "Raincoats",
       "Sleepwear",
-      "Socks",
-      "Underwear",
-      "Belts",
-      "Ties",
-      "Scarves",
-      "Gloves"
+      "Socks"
     ],
     "Electronics": [
       "Mobile phone",
       "Phone charger",
       "Laptop",
-      "Tablet",
-      "E-reader",
-      "Camera",
-      "Memory cards",
       "Headphones",
-      "Earphones",
-      "Power adapter",
-      "Converter",
-      "Flashlight",
-      "Torch",
       "Power bank"
     ],
     "Toiletries": [
       "Toothbrush",
       "Toothpaste",
-      "Floss",
       "Soap",
       "Shampoo",
-      "Conditioner",
-      "Deodorant",
-      "Towels",
-      "Tissues",
-      "Toilet roll",
-      "Makeup kit",
-      "Shaving kit",
-      "Hairbrush",
-      "Comb",
-      "Hair products",
-      "Feminine hygiene products"
+      "Deodorant"
     ],
-    "Footwear": [
-      "Sneakers",
-      "Sandals",
-      "Slippers",
-      "Formal shoes",
-      "Hiking shoes",
-      "Walking shoes",
-      "Swim shoes",
-      "Extra pair (backup)"
-    ],
-    "Accessories": [
-      "Sunglasses",
-      "Hat",
-      "Cap",
-      "Umbrella",
-      "Daypack",
-      "Small bag",
-      "Jewelry (minimal)",
-      "Travel pillow",
-      "Eye mask",
-      "Earplugs",
-      "Luggage locks",
-      "Luggage tags"
-    ],
-    "Watch": [
-      "Wristwatch (analog)",
-      "Wristwatch (digital)",
-      "Smartwatch",
-      "Smartwatch charger",
-      "Extra watch straps"
-    ],
-    "Documents": [
-      "Passport (original)",
-      "Passport (copies)",
-      "Visa papers",
-      "Tickets",
-      "Itinerary",
-      "Driver’s license",
-      "ID card",
-      "Health insurance card",
-      "Student card",
-      "Digital copies (cloud/phone)"
-    ],
+    "Footwear": ["Sneakers", "Sandals", "Formal shoes"],
+    "Accessories": ["Sunglasses", "Hat", "Umbrella", "Daypack"],
+    "Watch": ["Wristwatch", "Smartwatch"],
+    "Documents": ["Itinerary", "Driver’s license", "ID card"],
   };
 
-  // ✅ Keeps track of selected items
+  // track selected
   final Map<String, Set<String>> _selectedItems = {};
 
   @override
   void initState() {
     super.initState();
-    for (var key in _items.keys) {
-      _selectedItems[key] = {};
+    for (var k in _items.keys) _selectedItems[k] = {};
+    for (var s in widget.initialSelectedItems) {
+      // try to insert into first matching category (best-effort)
+      bool inserted = false;
+      for (var k in _items.keys) {
+        final list = _items[k] as List;
+        if (list.any((e) => (e is String && e == s) || (e is Map && e.values.first.contains(s)))) {
+          _selectedItems[k]!.add(s);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) {
+        _selectedItems["Essentials"]!.add(s); // fallback
+      }
     }
   }
 
-  void _toggleItem(String category, String item) {
+  void _toggleItem(String cat, String item) {
     setState(() {
-      if (_selectedItems[category]!.contains(item)) {
-        _selectedItems[category]!.remove(item);
-      } else {
-        _selectedItems[category]!.add(item);
-      }
+      if (_selectedItems[cat]!.contains(item))
+        _selectedItems[cat]!.remove(item);
+      else
+        _selectedItems[cat]!.add(item);
     });
   }
 
-  void _onDonePressed() {
-    final selectedList = _selectedItems.entries
-        .expand((e) => e.value)
-        .toList();
-
-    Navigator.pushNamed(
-      context,
-      '/smartChecklist',
-      arguments: {
-        "purpose": widget.purpose,
-        "items": selectedList,
-      },
-    );
+  void _onDone() {
+    // flatten selected into list of names
+    final selected = _selectedItems.entries.expand((e) => e.value).toList();
+    Navigator.pop(context, selected); // RETURN selected items to caller
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Select Your Packing Items",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF4A00E0),
-      ),
+      appBar: AppBar(title: const Text("Select Items"), backgroundColor: const Color(0xFF4A00E0)),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         children: _items.keys.map((category) {
+          final list = _items[category] as List;
           return Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.only(bottom: 14),
-            elevation: 3,
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ExpansionTile(
-              collapsedBackgroundColor: const Color(0xFFF3E8FF),
-              backgroundColor: const Color(0xFFF8F5FF),
-              title: Text(
-                category,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4A00E0),
-                ),
-              ),
-              children: _buildItemList(category, _items[category]),
+              title: Text(category, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4A00E0))),
+              children: list.map<Widget>((item) {
+                if (item is String) {
+                  return CheckboxListTile(
+                    title: Text(item),
+                    value: _selectedItems[category]!.contains(item),
+                    onChanged: (_) => _toggleItem(category, item),
+                    activeColor: const Color(0xFF4A00E0),
+                  );
+                } else if (item is Map) {
+                  final key = item.keys.first;
+                  return ExpansionTile(
+                    title: Text(key, style: const TextStyle(color: Color(0xFF4A00E0))),
+                    children: item[key]!.map<Widget>((sub) {
+                      return CheckboxListTile(
+                        title: Text(sub),
+                        value: _selectedItems[category]!.contains(sub),
+                        onChanged: (_) => _toggleItem(category, sub),
+                        activeColor: const Color(0xFF4A00E0),
+                      );
+                    }).toList(),
+                  );
+                }
+                return const SizedBox.shrink();
+              }).toList(),
             ),
           );
         }).toList(),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(12.0),
         child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4A00E0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-          onPressed: _onDonePressed,
-          child: const Text(
-            "Done",
-            style: TextStyle(fontSize: 16, color: Colors.white),
-          ),
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4A00E0)),
+          onPressed: _onDone,
+          child: const Padding(padding: EdgeInsets.symmetric(vertical: 14.0), child: Text("Done")),
         ),
       ),
     );
-  }
-
-  List<Widget> _buildItemList(String category, dynamic items) {
-    return items.map<Widget>((item) {
-      if (item is String) {
-        return CheckboxListTile(
-          title: Text(item),
-          activeColor: const Color(0xFF4A00E0),
-          value: _selectedItems[category]!.contains(item),
-          onChanged: (_) => _toggleItem(category, item),
-        );
-      } else if (item is Map<String, List<String>>) {
-        String subCategory = item.keys.first;
-        return ExpansionTile(
-          title: Text(
-            subCategory,
-            style: const TextStyle(color: Color(0xFF4A00E0)),
-          ),
-          children: item[subCategory]!.map((subItem) {
-            return CheckboxListTile(
-              title: Text(subItem),
-              activeColor: const Color(0xFF4A00E0),
-              value: _selectedItems[category]!.contains(subItem),
-              onChanged: (_) => _toggleItem(category, subItem),
-            );
-          }).toList(),
-        );
-      }
-      return const SizedBox.shrink();
-    }).toList();
   }
 }

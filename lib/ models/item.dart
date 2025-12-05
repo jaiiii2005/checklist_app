@@ -1,25 +1,32 @@
+// lib/models/item.dart
 class Item {
   String? id;
-  String name;
-  bool done;
+  final String name;
+  final String category;
+  final bool checked;
 
   Item({
     this.id,
     required this.name,
-    this.done = false,
+    required this.category,
+    this.checked = false,
   });
 
-  Map<String, dynamic> toMap() => {
-    "id": id,
-    "name": name,
-    "done": done,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      "id": id,
+      "name": name,
+      "category": category,
+      "checked": checked,
+    };
+  }
 
   factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
-      id: map["id"],
-      name: map["name"],
-      done: map["done"] ?? false,
+      id: map['id']?.toString(),
+      name: map['name']?.toString() ?? '',
+      category: map['category']?.toString() ?? 'Uncategorized',
+      checked: map['checked'] == true || map['checked'] == 'true',
     );
   }
 }
